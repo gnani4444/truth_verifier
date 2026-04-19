@@ -25,7 +25,7 @@ export default function UrlInput({ onVerify, loading }: Props) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://www.instagram.com/reel/..."
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
           disabled={loading}
         />
         <button

@@ -30,6 +30,7 @@ export interface DoneEvent {
 export interface ErrorEvent {
   type: 'error';
   message: string;
+  vision_required?: boolean;
 }
 
 export type SseEvent =

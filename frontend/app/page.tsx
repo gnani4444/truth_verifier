@@ -11,6 +11,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [visionRequired, setVisionRequired] = useState(false);
+  const [lastUrl, setLastUrl] = useState('');
   const [mediaType, setMediaType] = useState<'video' | 'image' | null>(null);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -19,6 +21,8 @@ export default function Home() {
   const handleVerify = useCallback(async (url: string, useVision: boolean) => {
     setLoading(true);
     setError('');
+    setVisionRequired(false);
+    setLastUrl(url);
     setStatus('Connecting to server...');
     setClaims([]);
     setMediaUrl(null);
@@ -62,6 +66,7 @@ export default function Home() {
             cleanup?.();
           } else if (event.type === 'error') {
             setError(event.message);
+            setVisionRequired(event.vision_required === true);
             setStatus('');
             setLoading(false);
             cleanup?.();
@@ -95,8 +100,16 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-4">
+            <span>{error}</span>
+            {visionRequired && (
+              <button
+                onClick={() => handleVerify(lastUrl, true)}
+                className="shrink-0 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+              >
+                Retry with Visual Analysis
+              </button>
+            )}
           </div>
         )}
 

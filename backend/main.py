@@ -71,14 +71,26 @@ async def stream_verify(job_id: str):
             jobs[job_id]["media_type"] = media_type
             yield {"data": json.dumps({"type": "media", "media_type": media_type, "filename": os.path.basename(media_path)})}
 
+            # For image posts, vision is required — bail early if it's off
+            if media_type == "image" and not use_vision:
+                yield {"data": json.dumps({
+                    "type": "error",
+                    "message": "This is an image post — enable Visual Analysis above to analyze it.",
+                    "vision_required": True,
+                })}
+                return
+
             # Step 2: Extract content (Gradium STT always; Gemini Vision only if use_vision)
             status_msg = "Extracting audio + visuals..." if use_vision else "Extracting audio..."
             yield {"data": json.dumps({"type": "status", "message": status_msg})}
             raw_text = await extract_text(media_path, media_type, use_vision=use_vision)
 
             if not raw_text.strip():
-                hint = "" if use_vision else " Try enabling Visual Analysis for image-only posts."
-                yield {"data": json.dumps({"type": "error", "message": f"No content could be extracted.{hint}"})}
+                yield {"data": json.dumps({
+                    "type": "error",
+                    "message": "No spoken audio detected in this video. Enable Visual Analysis to analyze the video frames instead.",
+                    "vision_required": True,
+                })}
                 return
 
             # Step 3: Find claims via TinyFish
