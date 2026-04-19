@@ -1,0 +1,8 @@
+backend/.env
+*.pyc
+__pycache__/
+.DS_Store
+.pytest_cache/
+*.egg-info/
+dist/
+build/
