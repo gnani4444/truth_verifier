@@ -29,7 +29,9 @@ async def _transcribe_audio(audio_path: str) -> str:
 
     transcript = []
     async for message in stream.iter_text():
-        transcript.append(message)
+        text = message.text if hasattr(message, "text") else str(message)
+        if text:
+            transcript.append(text)
 
     return " ".join(transcript)
 
