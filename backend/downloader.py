@@ -20,9 +20,9 @@ def download_instagram(url: str) -> tuple[str, str]:
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
 
-    ext = info.get("ext", "mp4")
+    ext = (info.get("ext") or "mp4").lower()
     path = f"{DOWNLOAD_DIR}/{job_id}.{ext}"
-    vcodec = info.get("vcodec", "none")
-    media_type = "video" if vcodec and vcodec != "none" else "image"
+    video_exts = {"mp4", "webm", "mkv", "mov", "avi", "m4v", "flv"}
+    media_type = "video" if ext in video_exts else "image"
 
     return path, media_type
