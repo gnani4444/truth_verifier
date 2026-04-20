@@ -93,6 +93,8 @@ async def stream_verify(job_id: str):
                 })}
                 return
 
+            yield {"data": json.dumps({"type": "text", "content": raw_text.strip()})}
+
             # Step 3: Find claims via TinyFish
             yield {"data": json.dumps({"type": "status", "message": "Finding claims..."})}
             claims = await parse_claims(raw_text)

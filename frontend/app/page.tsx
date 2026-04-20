@@ -17,6 +17,7 @@ export default function Home() {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [claims, setClaims] = useState<ClaimState[]>([]);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
 
   const handleVerify = useCallback(async (url: string, useVision: boolean) => {
     setLoading(true);
@@ -25,6 +26,7 @@ export default function Home() {
     setLastUrl(url);
     setStatus('Connecting to server...');
     setClaims([]);
+    setExtractedText(null);
     setMediaUrl(null);
     setMediaType(null);
     setDownloadUrl(null);
@@ -44,6 +46,8 @@ export default function Home() {
             setMediaUrl(url);
             setDownloadUrl(url);
             setMediaType(event.media_type);
+          } else if (event.type === 'text') {
+            setExtractedText(event.content);
           } else if (event.type === 'claim') {
             setClaims((prev) => [...prev, { text: event.text, status: 'checking' }]);
           } else if (event.type === 'result') {
@@ -111,6 +115,17 @@ export default function Home() {
               </button>
             )}
           </div>
+        )}
+
+        {extractedText && (
+          <details className="bg-white rounded-xl shadow-sm p-4">
+            <summary className="text-base font-semibold text-gray-800 cursor-pointer select-none">
+              Extracted Text
+            </summary>
+            <p className="mt-3 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {extractedText}
+            </p>
+          </details>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

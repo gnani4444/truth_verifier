@@ -37,7 +37,20 @@ async def parse_claims(raw_text: str) -> list[str]:
                 if event.get("type") == "COMPLETE":
                     raw = event.get("result", [])
                     if isinstance(raw, str):
-                        raw = json.loads(raw)
+                        # Try direct JSON parse first
+                        try:
+                            raw = json.loads(raw)
+                        except json.JSONDecodeError:
+                            # Fallback: extract JSON array from anywhere in the string
+                            import re
+                            match = re.search(r'\[.*?\]', raw, re.DOTALL)
+                            if match:
+                                try:
+                                    raw = json.loads(match.group())
+                                except json.JSONDecodeError:
+                                    raw = []
+                            else:
+                                raw = []
                     if isinstance(raw, list):
                         return [c for c in raw if isinstance(c, str)]
 

@@ -23,6 +23,11 @@ export interface StatusEvent {
   message: string;
 }
 
+export interface TextEvent {
+  type: 'text';
+  content: string;
+}
+
 export interface DoneEvent {
   type: 'done';
 }
@@ -38,6 +43,7 @@ export type SseEvent =
   | ClaimEvent
   | ResultEvent
   | StatusEvent
+  | TextEvent
   | DoneEvent
   | ErrorEvent;
 
