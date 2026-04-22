@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 interface Claim {
   claim: string;
-  verdict: "true" | "false" | "unverifiable";
+  verdict: "TRUE" | "FALSE" | "UNVERIFIABLE";
   [key: string]: unknown;
 }
 
@@ -62,8 +62,12 @@ export async function GET(req: Request) {
   let query = supabase
     .from("api_logs")
     .select("*, profiles!user_id(email)", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range(offset, offset + pageSize - 1);
+    .order("created_at", { ascending: false });
+
+  // Apply email filter in DB query chain
+  if (userEmailFilter) {
+    query = query.filter("profiles.email", "ilike", `%${userEmailFilter}%`);
+  }
 
   // Apply date filters
   if (fromDate) {
@@ -74,6 +78,9 @@ export async function GET(req: Request) {
     query = query.lte("created_at", toDate);
   }
 
+  // Apply pagination after filters
+  query = query.range(offset, offset + pageSize - 1);
+
   const { data: logs, count, error: logsError } = await query;
 
   if (logsError) {
@@ -81,45 +88,35 @@ export async function GET(req: Request) {
     return Response.json({ error: "Failed to fetch logs" }, { status: 500 });
   }
 
-  // 4. Process results: extract emails, filter by email if needed, compute verdict counts
-  const processedLogs = (logs || [])
-    .map((log: any) => {
-      const email = log.profiles?.email || "unknown";
+  // 4. Process results: extract emails and compute verdict counts
+  const processedLogs = (logs || []).map((log: any) => {
+    const email = log.profiles?.email || "unknown";
 
-      // Compute verdict counts from claims array
-      let true_count = 0;
-      let false_count = 0;
-      let unverifiable_count = 0;
+    // Compute verdict counts from claims array
+    let true_count = 0;
+    let false_count = 0;
+    let unverifiable_count = 0;
 
-      if (Array.isArray(log.claims)) {
-        log.claims.forEach((claim: Claim) => {
-          if (claim.verdict === "true") true_count++;
-          else if (claim.verdict === "false") false_count++;
-          else if (claim.verdict === "unverifiable") unverifiable_count++;
-        });
-      }
+    if (Array.isArray(log.claims)) {
+      log.claims.forEach((claim: Claim) => {
+        if (claim.verdict === "TRUE") true_count++;
+        else if (claim.verdict === "FALSE") false_count++;
+        else if (claim.verdict === "UNVERIFIABLE") unverifiable_count++;
+      });
+    }
 
-      return {
-        id: log.id,
-        user_email: email,
-        url: log.url,
-        use_vision: log.use_vision,
-        created_at: log.created_at,
-        claims: log.claims,
-        true_count,
-        false_count,
-        unverifiable_count,
-      };
-    })
-    .filter((log) => {
-      // Apply email filter if provided
-      if (userEmailFilter) {
-        return log.user_email
-          .toLowerCase()
-          .includes(userEmailFilter.toLowerCase());
-      }
-      return true;
-    });
+    return {
+      id: log.id,
+      user_email: email,
+      url: log.url,
+      use_vision: log.use_vision,
+      created_at: log.created_at,
+      claims: log.claims,
+      true_count,
+      false_count,
+      unverifiable_count,
+    };
+  });
 
   // 5. Return paginated results
   return Response.json({

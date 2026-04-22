@@ -72,14 +72,19 @@ export async function POST(req: Request) {
     }
   );
 
-  const { error: updateError } = await serviceRoleClient
+  const { data: updatedRows, error: updateError } = await serviceRoleClient
     .from("profiles")
     .update({ tier })
-    .eq("id", userId);
+    .eq("id", userId)
+    .select("id");
 
   if (updateError) {
     console.error("Tier update failed:", updateError);
     return Response.json({ error: "Failed to update tier" }, { status: 500 });
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return Response.json({ error: "User not found" }, { status: 404 });
   }
 
   // 6. Return success
