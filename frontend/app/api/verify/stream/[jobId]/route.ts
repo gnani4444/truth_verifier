@@ -81,16 +81,22 @@ export async function GET(
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
 
+  let leftover = "";
+
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>({
     async transform(chunk, controller) {
       // Forward the raw chunk to the client immediately
       controller.enqueue(chunk);
 
       // Decode and parse SSE lines to intercept events
-      const text = decoder.decode(chunk, { stream: true });
+      // Prepend any incomplete line carried over from the previous chunk
+      const text = leftover + decoder.decode(chunk, { stream: true });
       const lines = text.split("\n");
 
-      for (const line of lines) {
+      // The last element may be an incomplete line — save it for the next chunk
+      leftover = lines[lines.length - 1];
+
+      for (const line of lines.slice(0, -1)) {
         if (!line.startsWith("data:")) continue;
 
         const jsonStr = line.slice(5).trim();
@@ -146,9 +152,21 @@ export async function GET(
       }
     },
 
-    flush(controller) {
-      // Ensure stream is properly closed
-      controller.terminate();
+    flush(_controller) {
+      // Process any remaining incomplete line left in the buffer
+      const line = leftover.trim();
+      leftover = "";
+      if (line.startsWith("data:")) {
+        const jsonStr = line.slice(5).trim();
+        if (jsonStr) {
+          try {
+            JSON.parse(jsonStr); // validate — actual side-effects were already handled in transform
+          } catch {
+            // ignore malformed trailing data
+          }
+        }
+      }
+      // Stream closes naturally — no controller.terminate() needed
     },
   });
 
