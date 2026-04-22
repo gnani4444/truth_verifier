@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // --- Admin tier check (only for /admin* routes) ---
-  if (user && pathname.startsWith("/admin")) {
+  if (user && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("tier")
