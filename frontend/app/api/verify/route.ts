@@ -38,7 +38,11 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .gte("created_at", todayUTC.toISOString());
 
-    if (!countError && (count ?? 0) >= 5) {
+    if (countError) {
+      return Response.json({ error: "Rate limit check failed" }, { status: 429 });
+    }
+
+    if ((count ?? 0) >= 5) {
       return Response.json(
         {
           error:
@@ -67,12 +71,16 @@ export async function POST(req: Request) {
     .single();
 
   if (cached) {
-    await supabase.from("api_logs").insert({
+    const { error: logError } = await supabase.from("api_logs").insert({
       user_id: user.id,
       url,
       use_vision,
       claims: cached.claims,
     });
+
+    if (logError) {
+      console.error("api_logs insert failed (cache hit):", logError);
+    }
 
     return Response.json({
       job_id: null,
