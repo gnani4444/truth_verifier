@@ -55,10 +55,12 @@ async def stream_verify(job_id: str):
 
     async def event_generator():
         try:
+            url = job["url"]
+
             # Step 1: Download media
             yield {"data": json.dumps({"type": "status", "message": "Downloading post..."})}
             try:
-                media_path, media_type = download_instagram(job["url"])
+                media_path, media_type = download_instagram(url)
             except Exception as e:
                 msg = str(e).lower()
                 if "login" in msg or "private" in msg:
@@ -93,7 +95,8 @@ async def stream_verify(job_id: str):
                 })}
                 return
 
-            yield {"data": json.dumps({"type": "text", "content": raw_text.strip()})}
+            raw_text = raw_text.strip()
+            yield {"data": json.dumps({"type": "text", "content": raw_text})}
 
             # Step 3: Find claims via TinyFish
             yield {"data": json.dumps({"type": "status", "message": "Finding claims..."})}
@@ -103,7 +106,7 @@ async def stream_verify(job_id: str):
                 yield {"data": json.dumps({"type": "error", "message": "No verifiable claims found in this content"})}
                 return
 
-            # Step 4: Fact-check each claim sequentially via TinyFish
+            # Step 4: Fact-check each claim sequentially
             async for event in check_claims(claims):
                 yield {"data": json.dumps(event)}
                 await asyncio.sleep(0)
