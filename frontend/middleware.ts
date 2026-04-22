@@ -55,15 +55,17 @@ export async function middleware(request: NextRequest) {
 
   // --- Admin tier check (only for /admin* routes) ---
   if (user && pathname.startsWith("/admin")) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("tier")
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.tier !== "admin") {
-      // Let the request through — the page itself will call notFound()
-      return supabaseResponse;
+    if (profileError || !profile || profile.tier !== "admin") {
+      // Fail closed: DB error or non-admin tier → redirect to home
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = "/";
+      return NextResponse.redirect(homeUrl);
     }
   }
 
@@ -78,7 +80,8 @@ export const config = {
      *   - _next/static  (static files)
      *   - _next/image   (image optimisation)
      *   - favicon.ico   (favicon)
+     *   - api/          (API routes — handled server-side, no auth middleware needed)
      */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
   ],
 };
