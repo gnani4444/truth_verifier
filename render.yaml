@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: truth-verifier-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: GRADIUM_API_KEY
+        sync: false
+      - key: TINYFISH_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
