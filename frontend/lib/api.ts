@@ -3,15 +3,33 @@ import type { SseEvent } from '@/types';
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-export async function postVerify(url: string, useVision: boolean = false): Promise<string> {
-  const res = await fetch(`${BACKEND_URL}/verify`, {
+export interface ClaimResult {
+  text: string;
+  verdict: 'TRUE' | 'FALSE' | 'UNVERIFIABLE';
+  explanation: string;
+  source: string;
+}
+
+export async function postVerify(
+  url: string,
+  useVision: boolean = false,
+  forceRefresh: boolean = false
+): Promise<{ jobId: string | null; claims: ClaimResult[] | null; extractedText: string | null }> {
+  const res = await fetch('/api/verify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, use_vision: useVision }),
+    body: JSON.stringify({ url, use_vision: useVision, force_refresh: forceRefresh }),
   });
-  if (!res.ok) throw new Error('Failed to start verification');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to start verification');
+  }
   const data = await res.json();
-  return data.job_id as string;
+  return {
+    jobId: data.job_id ?? null,
+    claims: data.claims ?? null,
+    extractedText: data.extracted_text ?? null,
+  };
 }
 
 export function getMediaUrl(jobId: string): string {
@@ -20,10 +38,13 @@ export function getMediaUrl(jobId: string): string {
 
 export function streamResults(
   jobId: string,
+  url: string,
+  useVision: boolean,
   onEvent: (event: SseEvent) => void,
   onError: (err: Error) => void
 ): () => void {
-  const es = new EventSource(`${BACKEND_URL}/verify/stream/${jobId}`);
+  const streamUrl = `/api/verify/stream/${jobId}?url=${encodeURIComponent(url)}&use_vision=${useVision}`;
+  const es = new EventSource(streamUrl);
 
   es.onmessage = (e) => {
     try {
