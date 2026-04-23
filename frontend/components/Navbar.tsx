@@ -40,9 +40,10 @@ export default function Navbar({ email, tier }: NavbarProps) {
         {email && (
           <Link
             href="/profile"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            title={email}
+            className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:ring-2 hover:ring-blue-400 hover:ring-offset-1 transition-all"
           >
-            {email}
+            {email[0].toUpperCase()}
           </Link>
         )}
         <button
