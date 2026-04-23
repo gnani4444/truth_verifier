@@ -1,65 +1,50 @@
 import asyncio
-import json
 import os
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from fact_checker import check_claim, check_claims
 
 ENV = {"TINYFISH_API_KEY": "test-key"}
 
+# Authority-domain snippets get 2x weight; 3+ support/deny score triggers early return.
+_TRUE_RESULTS = [
+    {
+        "title": "X is beneficial and helps",
+        "snippet": "research shows X is beneficial and improves health, studies show it helps",
+        "url": "https://nih.gov/x",
+    }
+]
 
-def make_sse_lines(result_dict: dict) -> list[str]:
-    started = json.dumps({"type": "STARTED", "run_id": "123"})
-    complete = json.dumps({"type": "COMPLETE", "run_id": "123", "result": result_dict})
-    return [f"data: {started}", f"data: {complete}"]
-
-
-def build_mock_httpx(lines: list[str]):
-    async def aiter_lines():
-        for line in lines:
-            yield line
-
-    mock_response = MagicMock()
-    mock_response.aiter_lines = aiter_lines
-
-    mock_stream_cm = AsyncMock()
-    mock_stream_cm.__aenter__ = AsyncMock(return_value=mock_response)
-    mock_stream_cm.__aexit__ = AsyncMock(return_value=False)
-
-    mock_client = MagicMock()
-    mock_client.stream = MagicMock(return_value=mock_stream_cm)
-
-    mock_client_cm = AsyncMock()
-    mock_client_cm.__aenter__ = AsyncMock(return_value=mock_client)
-    mock_client_cm.__aexit__ = AsyncMock(return_value=False)
-
-    return mock_client_cm
+_FALSE_RESULTS = [
+    {
+        "title": "X is a myth",
+        "snippet": "no evidence, myth, debunked, no scientific evidence found",
+        "url": "https://nih.gov/y",
+    }
+]
 
 
 def test_check_claim_returns_true_verdict():
-    lines = make_sse_lines({"verdict": "TRUE", "explanation": "Verified.", "source": "https://cnn.com"})
-    with patch("fact_checker.httpx.AsyncClient", return_value=build_mock_httpx(lines)), \
+    # _search returns authority-domain results with strong support phrases (score >= 3)
+    with patch("fact_checker._search", new=AsyncMock(return_value=_TRUE_RESULTS)), \
          patch.dict("os.environ", ENV):
-        result = asyncio.run(check_claim("Biden is president"))
+        result = asyncio.run(check_claim("X is good for you"))
     assert result["verdict"] == "TRUE"
-    assert result["source"] == "https://cnn.com"
+    assert result["source"] == "https://nih.gov/x"
 
 
 def test_check_claim_returns_false_verdict():
-    lines = make_sse_lines({"verdict": "FALSE", "explanation": "No evidence.", "source": ""})
-    with patch("fact_checker.httpx.AsyncClient", return_value=build_mock_httpx(lines)), \
+    # _search returns authority-domain results with strong deny phrases (score >= 3)
+    with patch("fact_checker._search", new=AsyncMock(return_value=_FALSE_RESULTS)), \
          patch.dict("os.environ", ENV):
         result = asyncio.run(check_claim("Lemon cures cancer"))
     assert result["verdict"] == "FALSE"
 
 
 def test_check_claim_returns_unverifiable_on_timeout():
-    import httpx
-    with patch("fact_checker.httpx.AsyncClient") as mock_cls, \
-         patch("fact_checker.asyncio.sleep", new=AsyncMock()), \
+    # _search returns empty (e.g. after a timeout inside _search) → UNVERIFIABLE
+    with patch("fact_checker._search", new=AsyncMock(return_value=[])), \
          patch.dict("os.environ", ENV):
-        mock_cls.return_value.__aenter__ = AsyncMock(side_effect=httpx.TimeoutException("timeout"))
-        mock_cls.return_value.__aexit__ = AsyncMock(return_value=False)
         result = asyncio.run(check_claim("Some claim"))
     assert result["verdict"] == "UNVERIFIABLE"
 
