@@ -6,11 +6,27 @@ interface Props {
   onVerify: (url: string, useVision: boolean) => void;
   loading: boolean;
   showVision?: boolean;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  inputRef?: React.Ref<HTMLInputElement>;
 }
 
-export default function UrlInput({ onVerify, loading, showVision = false }: Props) {
-  const [url, setUrl] = useState('');
+export default function UrlInput({
+  onVerify,
+  loading,
+  showVision = false,
+  value,
+  onValueChange,
+  inputRef,
+}: Props) {
+  const [internalUrl, setInternalUrl] = useState('');
   const [useVision, setUseVision] = useState(false);
+
+  const url = typeof value === 'string' ? value : internalUrl;
+  const setUrl = (next: string) => {
+    if (typeof onValueChange === 'function') onValueChange(next);
+    else setInternalUrl(next);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +50,7 @@ export default function UrlInput({ onVerify, loading, showVision = false }: Prop
             placeholder="https://www.instagram.com/reel/..."
             className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-gray-300 text-sm transition-shadow"
             disabled={loading}
+            ref={inputRef}
           />
         </div>
         <button

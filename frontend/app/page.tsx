@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import UrlInput from "@/components/UrlInput";
 import MediaPreview from "@/components/MediaPreview";
 import ClaimsList from "@/components/ClaimsList";
@@ -33,6 +33,15 @@ export default function Home() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [claims, setClaims] = useState<ClaimState[]>([]);
   const [extractedText, setExtractedText] = useState<string | null>(null);
+  const [urlDraft, setUrlDraft] = useState("");
+  const urlInputRef = useRef<HTMLInputElement>(null);
+
+  const exampleUrls = [
+    "https://www.instagram.com/p/DTAiXo0koLw/",
+    "https://www.instagram.com/p/DU3L8kGkVEd/",
+    "https://www.instagram.com/p/DSspWVYjS0e/",
+    "https://www.instagram.com/p/DKoycCFTH9w/",
+  ] as const;
 
   useEffect(() => {
     const supabase = createClient();
@@ -222,7 +231,44 @@ export default function Home() {
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                 Instagram URL
               </p>
-              <UrlInput onVerify={handleVerify} loading={loading} showVision={usage.tier === "admin"} />
+              <UrlInput
+                onVerify={handleVerify}
+                loading={loading}
+                showVision={usage.tier === "admin"}
+                value={urlDraft}
+                onValueChange={setUrlDraft}
+                inputRef={urlInputRef}
+              />
+
+              <div className="mt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-gray-400">
+                    Try an example
+                  </p>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {exampleUrls.map((u) => (
+                    <button
+                      key={u}
+                      type="button"
+                      onClick={() => {
+                        setUrlDraft(u);
+                        requestAnimationFrame(() => {
+                          urlInputRef.current?.focus();
+                          urlInputRef.current?.setSelectionRange(u.length, u.length);
+                        });
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+                      disabled={loading}
+                      title={u}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                      {new URL(u).pathname.replace(/\/$/, "").split("/").slice(-1)[0]}
+                      <span className="text-gray-400 font-medium">→</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             {hasResults && !loading && (
               <button
