@@ -197,7 +197,7 @@ export default function Home() {
           {/* URL input */}
           <div className="bg-white rounded-xl shadow-sm p-4 flex items-end gap-3">
             <div className="flex-1">
-              <UrlInput onVerify={handleVerify} loading={loading} />
+              <UrlInput onVerify={handleVerify} loading={loading} showVision={usage.tier === "admin"} />
             </div>
             {hasResults && !loading && (
               <button
@@ -214,7 +214,7 @@ export default function Home() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center justify-between gap-4">
               <span>{error}</span>
-              {visionRequired && (
+              {visionRequired && usage.tier === "admin" && (
                 <button
                   onClick={() => handleVerify(lastUrl, true)}
                   className="shrink-0 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"

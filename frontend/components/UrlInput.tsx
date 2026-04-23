@@ -5,9 +5,10 @@ import { useState } from 'react';
 interface Props {
   onVerify: (url: string, useVision: boolean) => void;
   loading: boolean;
+  showVision?: boolean;
 }
 
-export default function UrlInput({ onVerify, loading }: Props) {
+export default function UrlInput({ onVerify, loading, showVision = false }: Props) {
   const [url, setUrl] = useState('');
   const [useVision, setUseVision] = useState(false);
 
@@ -36,19 +37,21 @@ export default function UrlInput({ onVerify, loading }: Props) {
           {loading ? 'Verifying...' : 'Verify'}
         </button>
       </form>
-      <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
-        <input
-          type="checkbox"
-          checked={useVision}
-          onChange={(e) => setUseVision(e.target.checked)}
-          disabled={loading}
-          className="w-4 h-4 accent-blue-600"
-        />
-        <span className="text-sm text-gray-600">
-          Enable Visual Analysis{' '}
-          <span className="text-gray-400">(Gemini Vision — requires GEMINI_API_KEY)</span>
-        </span>
-      </label>
+      {showVision && (
+        <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={useVision}
+            onChange={(e) => setUseVision(e.target.checked)}
+            disabled={loading}
+            className="w-4 h-4 accent-blue-600"
+          />
+          <span className="text-sm text-gray-600">
+            Enable Visual Analysis{' '}
+            <span className="text-gray-400">(Gemini Vision — requires GEMINI_API_KEY)</span>
+          </span>
+        </label>
+      )}
     </div>
   );
 }
