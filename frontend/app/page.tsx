@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import UrlInput from "@/components/UrlInput";
 import MediaPreview from "@/components/MediaPreview";
 import ClaimsList from "@/components/ClaimsList";
@@ -20,7 +19,6 @@ interface UsageInfo {
 }
 
 export default function Home() {
-  const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [usage, setUsage] = useState<UsageInfo>({ used: 0, limit: null, tier: null });
   const [showUpgrade, setShowUpgrade] = useState(false);
