@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 
@@ -15,6 +16,22 @@ export async function POST(req: Request) {
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const supabaseAdmin =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          {
+            cookies: {
+              getAll() {
+                return [];
+              },
+              setAll() {},
+            },
+          }
+        )
+      : null;
 
   // 3. Fetch profile tier
   const { data: profile, error: profileError } = await supabase
@@ -55,11 +72,8 @@ export async function POST(req: Request) {
 
   // 5. Force refresh: delete cached row
   if (force_refresh === true) {
-    await supabase
-      .from("processed_reels")
-      .delete()
-      .eq("url", url)
-      .eq("use_vision", use_vision);
+    const deleter = supabaseAdmin ?? supabase;
+    await deleter.from("processed_reels").delete().eq("url", url).eq("use_vision", use_vision);
   }
 
   // 6. Cache lookup
@@ -71,7 +85,8 @@ export async function POST(req: Request) {
     .single();
 
   if (cached) {
-    const { error: logError } = await supabase.from("api_logs").insert({
+    const logger = supabaseAdmin ?? supabase;
+    const { error: logError } = await logger.from("api_logs").insert({
       user_id: user.id,
       url,
       use_vision,
