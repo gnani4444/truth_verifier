@@ -26,7 +26,7 @@ export default function Navbar({ email, tier }: NavbarProps) {
   const tierClass = tier ? (tierColors[tier] ?? "bg-gray-100 text-gray-600") : "";
 
   return (
-    <nav className="flex items-center justify-between py-3 px-6 bg-white border-b border-gray-100 shadow-sm">
+    <nav className="flex items-center justify-between py-2 px-6 bg-white border-b border-gray-100 shadow-sm">
       <Link href="/" className="text-lg font-bold text-gray-900 tracking-tight">
         Truth Verifier
       </Link>
@@ -41,14 +41,14 @@ export default function Navbar({ email, tier }: NavbarProps) {
           <Link
             href="/profile"
             title={email}
-            className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:ring-2 hover:ring-blue-400 hover:ring-offset-1 transition-all"
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold hover:ring-2 hover:ring-blue-400 hover:ring-offset-1 transition-all"
           >
             {email[0].toUpperCase()}
           </Link>
         )}
         <button
           onClick={handleSignOut}
-          className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          className="px-3 py-1 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
         >
           Sign out
         </button>
