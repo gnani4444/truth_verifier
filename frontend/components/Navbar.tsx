@@ -26,7 +26,7 @@ export default function Navbar({ email, tier }: NavbarProps) {
   const tierClass = tier ? (tierColors[tier] ?? "bg-gray-100 text-gray-600") : "";
 
   return (
-    <nav className="flex items-center justify-between py-4 px-6 bg-white border-b border-gray-100 shadow-sm">
+    <nav className="flex items-center justify-between py-3 px-6 bg-white border-b border-gray-100 shadow-sm">
       <Link href="/" className="text-lg font-bold text-gray-900 tracking-tight">
         Truth Verifier
       </Link>

@@ -77,7 +77,10 @@ export async function POST(req: Request) {
   }
 
   // 6. Cache lookup
-  const { data: cached } = await supabase
+  // Use service role for cache reads so we can reuse processed results across all users
+  // even when RLS blocks anon reads.
+  const cacheReader = supabaseAdmin ?? supabase;
+  const { data: cached } = await cacheReader
     .from("processed_reels")
     .select("claims, extracted_text")
     .eq("url", url)

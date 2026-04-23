@@ -36,11 +36,11 @@ export default function Home() {
   const [urlDraft, setUrlDraft] = useState("");
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  const exampleUrls = [
-    "https://www.instagram.com/p/DTAiXo0koLw/",
-    "https://www.instagram.com/p/DU3L8kGkVEd/",
-    "https://www.instagram.com/p/DSspWVYjS0e/",
-    "https://www.instagram.com/p/DKoycCFTH9w/",
+  const examples = [
+    { label: "Health reel", url: "https://www.instagram.com/p/DTAiXo0koLw/" },
+    { label: "Health reel", url: "https://www.instagram.com/p/DU3L8kGkVEd/" },
+    { label: "Health reel", url: "https://www.instagram.com/p/DSspWVYjS0e/" },
+    { label: "Tech reel", url: "https://www.instagram.com/p/DKoycCFTH9w/" },
   ] as const;
 
   useEffect(() => {
@@ -247,7 +247,7 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {exampleUrls.map((u) => (
+                  {examples.map(({ label, url: u }, idx) => (
                     <button
                       key={u}
                       type="button"
@@ -263,7 +263,7 @@ export default function Home() {
                       title={u}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
-                      {new URL(u).pathname.replace(/\/$/, "").split("/").slice(-1)[0]}
+                      {label} {idx < 3 ? idx + 1 : ""}
                       <span className="text-gray-400 font-medium">→</span>
                     </button>
                   ))}
