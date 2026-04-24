@@ -35,6 +35,7 @@ export default function Home() {
   const [extractedText, setExtractedText] = useState<string | null>(null);
   const [urlDraft, setUrlDraft] = useState("");
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const claimsRef = useRef<{ text: string; verdict: string; explanation: string; source: string }[]>([]);
 
   const examples = [
     { label: "Health reel", url: "https://www.instagram.com/p/DTAiXo0koLw/" },
@@ -79,6 +80,7 @@ export default function Home() {
       setLastUseVision(useVision);
       setStatus("Connecting to server...");
       setClaims([]);
+      claimsRef.current = [];
       setExtractedText(null);
       setMediaUrl(null);
       setMediaType(null);
@@ -124,6 +126,12 @@ export default function Home() {
               } else if (event.type === "claim") {
                 setClaims((prev) => [...prev, { text: event.text, status: "checking" }]);
               } else if (event.type === "result") {
+                claimsRef.current.push({
+                  text: event.text,
+                  verdict: event.verdict,
+                  explanation: event.explanation,
+                  source: event.source,
+                });
                 setClaims((prev) =>
                   prev.map((c) =>
                     c.text === event.text
@@ -138,6 +146,12 @@ export default function Home() {
                   )
                 );
               } else if (event.type === "done") {
+                fetch("/api/verify/log", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ url, use_vision: useVision, claims: claimsRef.current }),
+                }).catch((err) => console.error("Failed to log verification:", err));
+                claimsRef.current = [];
                 setStatus("");
                 setLoading(false);
                 cleanup?.();
