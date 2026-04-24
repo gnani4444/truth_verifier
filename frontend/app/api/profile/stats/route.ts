@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
 export async function GET() {
   const supabase = await createClient();
@@ -7,6 +8,22 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const supabaseAdmin =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          {
+            cookies: {
+              getAll() { return []; },
+              setAll() {},
+            },
+          }
+        )
+      : null;
+
+  const reader = supabaseAdmin ?? supabase;
 
   const now = new Date();
 
@@ -19,21 +36,21 @@ export async function GET() {
 
   const [{ count: total }, { count: today }, { count: week }, { data: logs }] =
     await Promise.all([
-      supabase
+      reader
         .from("api_logs")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id),
-      supabase
+      reader
         .from("api_logs")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("created_at", todayUTC.toISOString()),
-      supabase
+      reader
         .from("api_logs")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
         .gte("created_at", sevenDaysAgo.toISOString()),
-      supabase
+      reader
         .from("api_logs")
         .select("claims, created_at")
         .eq("user_id", user.id)

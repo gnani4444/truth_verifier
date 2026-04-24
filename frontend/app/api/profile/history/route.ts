@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
 export async function GET() {
   const supabase = await createClient();
@@ -8,7 +9,23 @@ export async function GET() {
 
   if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: logs } = await supabase
+  const supabaseAdmin =
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          {
+            cookies: {
+              getAll() { return []; },
+              setAll() {},
+            },
+          }
+        )
+      : null;
+
+  const reader = supabaseAdmin ?? supabase;
+
+  const { data: logs } = await reader
     .from("api_logs")
     .select("id, url, use_vision, claims, created_at")
     .eq("user_id", user.id)

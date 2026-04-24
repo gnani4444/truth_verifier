@@ -64,11 +64,15 @@ export default function ProfileClient({
 
   useEffect(() => {
     fetch("/api/profile/stats")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Stats fetch failed: ${r.status}`);
+        return r.json();
+      })
       .then((d) => {
         if (!d.error) setStats(d);
+        else console.error("Stats API error:", d.error);
       })
-      .catch(() => {})
+      .catch((err) => console.error("Failed to load stats:", err))
       .finally(() => setStatsLoading(false));
   }, []);
 
@@ -76,11 +80,15 @@ export default function ProfileClient({
     if (activeTab === "history" && history.length === 0) {
       setHistoryLoading(true);
       fetch("/api/profile/history")
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error(`History fetch failed: ${r.status}`);
+          return r.json();
+        })
         .then((d) => {
           if (!d.error) setHistory(d.history);
+          else console.error("History API error:", d.error);
         })
-        .catch(() => {})
+        .catch((err) => console.error("Failed to load history:", err))
         .finally(() => setHistoryLoading(false));
     }
   }, [activeTab, history.length]);

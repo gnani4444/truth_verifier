@@ -63,16 +63,22 @@ export async function GET(
   }
 
   // Service-role client for DB writes (bypasses RLS)
-  const supabaseAdmin = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() { return []; },
-        setAll() {},
-      },
-    }
-  );
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  let supabaseAdmin: ReturnType<typeof createServerClient> | null = null;
+  if (!serviceRoleKey) {
+    console.error("SUPABASE_SERVICE_ROLE_KEY not set — api_logs insert will be skipped");
+  } else {
+    supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey,
+      {
+        cookies: {
+          getAll() { return []; },
+          setAll() {},
+        },
+      }
+    );
+  }
 
   // 5. Create a TransformStream to intercept events, collect data, and write to Supabase on done
   const claimResults: { text: string; verdict: string; explanation: string; source: string }[] = [];
@@ -121,31 +127,36 @@ export async function GET(
         } else if (event.type === "done") {
           // Write to processed_reels (upsert) and api_logs
           const upsertPromise = supabaseAdmin
-            .from("processed_reels")
-            .upsert(
-              {
-                url,
-                use_vision,
-                extracted_text: extractedText,
-                claims: claimResults,
-              },
-              { onConflict: "url,use_vision" }
-            )
-            .then(({ error }) => {
-              if (error) console.error("processed_reels upsert failed:", error);
-            });
+            ? supabaseAdmin
+                .from("processed_reels")
+                .upsert(
+                  {
+                    url,
+                    use_vision,
+                    extracted_text: extractedText,
+                    claims: claimResults,
+                  },
+                  { onConflict: "url,use_vision" }
+                )
+                .then(({ error }) => {
+                  if (error) console.error("processed_reels upsert failed:", JSON.stringify(error));
+                })
+            : Promise.resolve();
 
+          console.log("api_logs insert payload:", { user_id: user.id, url, claim_count: claimResults.length });
           const insertPromise = supabaseAdmin
-            .from("api_logs")
-            .insert({
-              user_id: user.id,
-              url,
-              use_vision,
-              claims: claimResults,
-            })
-            .then(({ error }) => {
-              if (error) console.error("api_logs insert failed:", error);
-            });
+            ? supabaseAdmin
+                .from("api_logs")
+                .insert({
+                  user_id: user.id,
+                  url,
+                  use_vision,
+                  claims: claimResults,
+                })
+                .then(({ error }) => {
+                  if (error) console.error("api_logs insert failed:", JSON.stringify(error), { user_id: user.id, url });
+                })
+            : Promise.resolve();
 
           await Promise.all([upsertPromise, insertPromise]);
         }
