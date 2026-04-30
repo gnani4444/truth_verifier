@@ -27,7 +27,7 @@ export default function Navbar({ email, tier }: NavbarProps) {
 
   return (
     <nav className="flex items-center justify-between py-2 px-6 bg-white border-b border-gray-100 shadow-sm">
-      <Link href="/" className="text-lg font-bold text-gray-900 tracking-tight">
+      <Link href="/verify" className="text-lg font-bold text-gray-900 tracking-tight">
         Truth Verifier
       </Link>
 
