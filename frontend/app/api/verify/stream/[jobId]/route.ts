@@ -138,7 +138,7 @@ export async function GET(
                   },
                   { onConflict: "url,use_vision" }
                 )
-                .then(({ error }) => {
+                .then(({ error }: { error: unknown }) => {
                   if (error) console.error("processed_reels upsert failed:", JSON.stringify(error));
                 })
             : Promise.resolve();
@@ -153,7 +153,7 @@ export async function GET(
                   use_vision,
                   claims: claimResults,
                 })
-                .then(({ error }) => {
+                .then(({ error }: { error: unknown }) => {
                   if (error) console.error("api_logs insert failed:", JSON.stringify(error), { user_id: user.id, url });
                 })
             : Promise.resolve();
