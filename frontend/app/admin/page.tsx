@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServerClient } from '@supabase/ssr';
-import AdminUsersTable from '@/components/admin/AdminUsersTable';
-import AdminLogsTable from '@/components/admin/AdminLogsTable';
+import AdminTabs from '@/components/admin/AdminTabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -140,31 +139,19 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="pt-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="pt-4 pb-6">
           <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
           <p className="text-gray-500 mt-1 text-sm">
             Manage users and review verification logs
           </p>
         </div>
 
-        {/* Users Section */}
-        <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-3">Users</h2>
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <AdminUsersTable users={users} />
-          </div>
-        </section>
-
-        {/* Logs Section */}
-        <section>
-          <h2 className="text-xl font-semibold text-gray-800 mb-3">
-            Verification Logs
-          </h2>
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <AdminLogsTable initialLogs={initialLogs} initialTotal={initialTotal} />
-          </div>
-        </section>
+        <AdminTabs
+          users={users}
+          initialLogs={initialLogs}
+          initialTotal={initialTotal}
+        />
       </div>
     </main>
   );

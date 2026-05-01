@@ -1,10 +1,11 @@
 interface UsageBannerProps {
   used: number;
   limit: number;
+  tier?: string;
   onUpgrade: () => void;
 }
 
-export default function UsageBanner({ used, limit, onUpgrade }: UsageBannerProps) {
+export default function UsageBanner({ used, limit, tier, onUpgrade }: UsageBannerProps) {
   const remaining = Math.max(0, limit - used);
   const pct = Math.min(100, (used / limit) * 100);
   const isExhausted = remaining === 0;
@@ -23,12 +24,16 @@ export default function UsageBanner({ used, limit, onUpgrade }: UsageBannerProps
             ? "Daily limit reached — 0 verifications remaining"
             : `${remaining} of ${limit} free verifications remaining today`}
         </span>
-        <button
-          onClick={onUpgrade}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          Upgrade to Pro →
-        </button>
+        {tier === "pro" ? (
+          <span className="text-xs font-semibold text-green-600">Pro Plan ✓</span>
+        ) : (
+          <button
+            onClick={onUpgrade}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Upgrade to Pro →
+          </button>
+        )}
       </div>
       <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
         <div

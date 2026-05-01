@@ -230,69 +230,82 @@ export default function Home() {
         </section>
 
         <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-          {/* Usage banner for free users */}
-          {usage.tier === "free" && usage.limit !== null && (
+          {/* Usage banner for free and pro users */}
+          {(usage.tier === "free" || usage.tier === "pro") && usage.limit !== null && (
             <UsageBanner
               used={usage.used}
               limit={usage.limit}
+              tier={usage.tier ?? undefined}
               onUpgrade={() => setShowUpgrade(true)}
             />
           )}
 
           {/* URL input */}
-          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5 flex items-end gap-3">
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Instagram URL
               </p>
-              <UrlInput
-                onVerify={handleVerify}
-                loading={loading}
-                showVision={usage.tier === "admin"}
-                value={urlDraft}
-                onValueChange={setUrlDraft}
-                inputRef={urlInputRef}
-              />
-
-              <div className="mt-3">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-gray-400">
-                    Try an example
-                  </p>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {examples.map(({ label, url: u }, idx) => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => {
-                        setUrlDraft(u);
-                        requestAnimationFrame(() => {
-                          urlInputRef.current?.focus();
-                          urlInputRef.current?.setSelectionRange(u.length, u.length);
-                        });
-                      }}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
-                      disabled={loading}
-                      title={u}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
-                      {label} {idx < 3 ? idx + 1 : ""}
-                      <span className="text-gray-400 font-medium">→</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2">
+                {lastUrl && (
+                  <a
+                    href={lastUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    Open on Instagram ↗
+                  </a>
+                )}
+                {hasResults && !loading && (
+                  <button
+                    onClick={() => handleVerify(lastUrl, lastUseVision, true)}
+                    className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-200 transition-colors border border-gray-200"
+                    title="Clear cache and re-run from scratch"
+                  >
+                    ↺ Refresh
+                  </button>
+                )}
               </div>
             </div>
-            {hasResults && !loading && (
-              <button
-                onClick={() => handleVerify(lastUrl, lastUseVision, true)}
-                className="shrink-0 px-4 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors border border-gray-200"
-                title="Clear cache and re-run from scratch"
-              >
-                ↺ Refresh
-              </button>
-            )}
+            <UrlInput
+              onVerify={handleVerify}
+              loading={loading}
+              showVision={usage.tier === "admin"}
+              value={urlDraft}
+              onValueChange={setUrlDraft}
+              inputRef={urlInputRef}
+            />
+
+            <div className="mt-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-medium text-gray-400">
+                  Try an example
+                </p>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {examples.map(({ label, url: u }, idx) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => {
+                      setUrlDraft(u);
+                      requestAnimationFrame(() => {
+                        urlInputRef.current?.focus();
+                        urlInputRef.current?.setSelectionRange(u.length, u.length);
+                      });
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700 text-xs font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+                    disabled={loading}
+                    title={u}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                    {label} {idx < 3 ? idx + 1 : ""}
+                    <span className="text-gray-400 font-medium">→</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Error */}
