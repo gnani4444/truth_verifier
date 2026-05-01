@@ -7,9 +7,18 @@ TINYFISH_URL = "https://agent.tinyfish.ai/v1/automation/run-sse"
 
 
 def _sentences_from_text(text: str) -> list[str]:
-    """Fallback: split text into non-trivial sentences to use as claims directly."""
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-    return [s.strip() for s in sentences if len(s.strip()) > 20]
+    """Fallback: split text into non-trivial sentences, skipping pronoun-led ones."""
+    _PRONOUN_START = re.compile(
+        r"^(I|me|my|he|she|they|them|their|it|this|that|these|those|we|our|you|your|"
+        r"so i|but i|and i|so he|but he|and he|so she|and she)\b",
+        re.IGNORECASE,
+    )
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [
+        s.strip()
+        for s in sentences
+        if len(s.strip()) >= 30 and not _PRONOUN_START.match(s.strip())
+    ]
 
 
 def _parse_tinyfish_result(raw) -> list[str]:
@@ -51,15 +60,23 @@ async def parse_claims(raw_text: str) -> list[str]:
 
     api_key = os.environ["TINYFISH_API_KEY"]
 
-    # Restate the content as plain declarative sentences before asking for claims
     goal = (
-        "Read the following transcript and restate every factual assertion it makes as "
-        "short, self-contained declarative sentences suitable for independent fact-checking.\n"
-        "Include: numbers, statistics, health claims, named people/places/events, historical facts.\n"
-        "Exclude: pure opinions, questions, greetings, filler phrases.\n\n"
+        "Read the following transcript.\n\n"
+        "STEP 1 — Identify the speaker: if a name is mentioned anywhere in the transcript, "
+        "note it as the speaker's name.\n\n"
+        "STEP 2 — Extract only independently verifiable factual claims. For every claim:\n"
+        "  • Replace every pronoun (I, me, my, he, she, they, it, this, that, these, those, we) "
+        "with the actual named subject. If the speaker's name was found, treat 'I' as them.\n"
+        "  • The rewritten claim must make complete sense to a reader with zero context.\n"
+        "  • Do NOT output a claim that still contains an unresolved pronoun or ambiguous reference.\n\n"
+        "Include: specific numbers, statistics, health claims, named people/places/events, "
+        "historical facts, product or ingredient claims.\n"
+        "Exclude: opinions, questions, greetings, introductions, promotional language without "
+        "a specific verifiable fact, and any sentence whose subject is unclear.\n\n"
         f"Transcript:\n{raw_text}\n\n"
-        "Output ONLY a JSON array of strings, one claim per element. "
-        'Example: ["Claim one.", "Claim two."]'
+        "Output ONLY a JSON array of strings, one fully self-contained claim per element.\n"
+        'Example: ["Turmeric reduces joint inflammation.", '
+        '"Dr. Rhonda Patrick recommends 10 grams of collagen daily."]'
     )
 
     headers = {"X-API-Key": api_key, "Content-Type": "application/json"}

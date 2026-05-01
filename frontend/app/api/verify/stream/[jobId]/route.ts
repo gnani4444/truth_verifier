@@ -1,4 +1,5 @@
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 300; // 5 minutes — covers long video download + transcription
 
 import { createServerClient } from "@supabase/ssr";
 

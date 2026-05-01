@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 from claims_parser import parse_claims
 from downloader import download_instagram
 from extractor import extract_text
-from fact_checker import check_claims
+from fact_checker import check_claim
 from models import VerifyRequest, VerifyResponse
 
 load_dotenv()
@@ -53,14 +53,30 @@ async def stream_verify(job_id: str):
 
     use_vision = job["use_vision"]
 
+    async def _run_with_heartbeat(coro, status_msg: str, interval: float = 8.0):
+        """Run an async coroutine, yielding status pings every `interval` seconds."""
+        task = asyncio.create_task(coro)
+        events = []
+        while not task.done():
+            try:
+                await asyncio.wait_for(asyncio.shield(task), timeout=interval)
+            except asyncio.TimeoutError:
+                events.append({"data": json.dumps({"type": "status", "message": status_msg})})
+        return task.result(), events
+
     async def event_generator():
         try:
             url = job["url"]
 
-            # Step 1: Download media
+            # Step 1: Download media (sync — run in thread, heartbeat every 8 s)
             yield {"data": json.dumps({"type": "status", "message": "Downloading post..."})}
             try:
-                media_path, media_type = download_instagram(url)
+                (media_path, media_type), dl_pings = await _run_with_heartbeat(
+                    asyncio.to_thread(download_instagram, url),
+                    "Downloading post...",
+                )
+                for ping in dl_pings:
+                    yield ping
             except Exception as e:
                 msg = str(e).lower()
                 if "login" in msg or "private" in msg:
@@ -82,10 +98,16 @@ async def stream_verify(job_id: str):
                 })}
                 return
 
-            # Step 2: Extract content (Gradium STT always; Gemini Vision only if use_vision)
-            status_msg = "Extracting audio + visuals..." if use_vision else "Extracting audio..."
+            # Step 2: Extract content — heartbeat every 10 s (transcription can be slow)
+            status_msg = "Extracting audio + visuals..." if use_vision else "Transcribing audio..."
             yield {"data": json.dumps({"type": "status", "message": status_msg})}
-            raw_text = await extract_text(media_path, media_type, use_vision=use_vision)
+            raw_text, extract_pings = await _run_with_heartbeat(
+                extract_text(media_path, media_type, use_vision=use_vision),
+                status_msg,
+                interval=10.0,
+            )
+            for ping in extract_pings:
+                yield ping
 
             if not raw_text.strip():
                 yield {"data": json.dumps({
@@ -98,18 +120,37 @@ async def stream_verify(job_id: str):
             raw_text = raw_text.strip()
             yield {"data": json.dumps({"type": "text", "content": raw_text})}
 
-            # Step 3: Find claims via TinyFish
+            # Step 3: Find claims via TinyFish — heartbeat every 10 s
             yield {"data": json.dumps({"type": "status", "message": "Finding claims..."})}
-            claims = await parse_claims(raw_text)
+            claims, claims_pings = await _run_with_heartbeat(
+                parse_claims(raw_text),
+                "Analyzing transcript...",
+                interval=10.0,
+            )
+            for ping in claims_pings:
+                yield ping
 
             if not claims:
                 yield {"data": json.dumps({"type": "error", "message": "No verifiable claims found in this content"})}
                 return
 
-            # Step 4: Fact-check each claim sequentially
-            async for event in check_claims(claims):
-                yield {"data": json.dumps(event)}
-                await asyncio.sleep(0)
+            # Step 4: Fact-check each claim with heartbeat pings per claim
+            for claim in claims:
+                yield {"data": json.dumps({"type": "claim", "text": claim, "status": "checking"})}
+                result, check_pings = await _run_with_heartbeat(
+                    check_claim(claim),
+                    f"Checking: {claim[:60]}...",
+                    interval=8.0,
+                )
+                for ping in check_pings:
+                    yield ping
+                yield {"data": json.dumps({
+                    "type": "result",
+                    "text": claim,
+                    "verdict": result["verdict"],
+                    "explanation": result["explanation"],
+                    "source": result["source"],
+                })}
 
             yield {"data": json.dumps({"type": "done"})}
 
