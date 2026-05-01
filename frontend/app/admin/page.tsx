@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServerClient } from '@supabase/ssr';
 import AdminTabs from '@/components/admin/AdminTabs';
+
+export const metadata: Metadata = {
+  title: 'Admin Dashboard',
+  robots: { index: false, follow: false, noarchive: true },
+};
 
 export const dynamic = 'force-dynamic';
 

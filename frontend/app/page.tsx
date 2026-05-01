@@ -1,7 +1,25 @@
+import type { Metadata } from 'next';
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import LandingNavbar from "@/components/LandingNavbar";
+
+export const metadata: Metadata = {
+  title: 'Truth Verifier — AI-Powered Instagram Fact Checker',
+  description: 'Stop the spread of misinformation. Paste any Instagram post URL and get AI-powered fact-checking with real-time TRUE / FALSE / UNVERIFIABLE verdicts. Free to start.',
+  keywords: ['fact check instagram', 'instagram misinformation', 'AI claim verification', 'instagram fact checker', 'social media truth checker', 'real-time fact checking'],
+  openGraph: {
+    title: 'Truth Verifier — Stop Misinformation Before It Spreads',
+    description: 'AI-powered Instagram fact-checking. Paste a URL, get instant claim-by-claim verdicts backed by real sources.',
+    url: 'https://truthverifier.app',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Truth Verifier — Stop Misinformation',
+    description: 'AI-powered Instagram fact-checking. Paste a URL, get instant verdicts.',
+  },
+};
 
 export default async function Home() {
   const supabase = await createClient();

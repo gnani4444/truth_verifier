@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 
 interface Claim {
   claim: string;
@@ -47,7 +48,19 @@ export async function GET(req: Request) {
     );
   }
 
-  // 2. Parse query parameters
+  // 2. Create service role client for all data queries (bypasses RLS)
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? createSupabaseAdmin(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      )
+    : null;
+
+  if (!serviceRole) {
+    return Response.json({ error: "Server configuration error" }, { status: 500 });
+  }
+
+  // 3. Parse query parameters
   const url = new URL(req.url);
   const pageStr = url.searchParams.get("page") || "1";
   const userEmailFilter = url.searchParams.get("user");
@@ -58,16 +71,11 @@ export async function GET(req: Request) {
   const pageSize = 20;
   const offset = (page - 1) * pageSize;
 
-  // 3. Build query - use select with join syntax for Supabase
-  let query = supabase
+  // 4. Build query using service role client (no join — fetch emails separately)
+  let query = serviceRole
     .from("api_logs")
-    .select("*, profiles!user_id(email)", { count: "exact" })
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
-
-  // Apply email filter in DB query chain
-  if (userEmailFilter) {
-    query = query.filter("profiles.email", "ilike", `%${userEmailFilter}%`);
-  }
 
   // Apply date filters
   if (fromDate) {
@@ -88,9 +96,35 @@ export async function GET(req: Request) {
     return Response.json({ error: "Failed to fetch logs" }, { status: 500 });
   }
 
-  // 4. Process results: extract emails and compute verdict counts
-  const processedLogs = (logs || []).map((log: any) => {
-    const email = log.profiles?.email || "unknown";
+  // 5. Fetch emails for all unique user_ids in one query
+  const userIds = [...new Set((logs || []).map((log: any) => log.user_id).filter(Boolean))];
+  const emailMap: Record<string, string> = {};
+
+  if (userIds.length > 0) {
+    const { data: profileRows, error: profilesError } = await serviceRole
+      .from("profiles")
+      .select("id, email")
+      .in("id", userIds);
+
+    if (profilesError) {
+      console.error("Profiles fetch failed:", profilesError);
+    } else {
+      (profileRows || []).forEach((p: any) => {
+        emailMap[p.id] = p.email;
+      });
+    }
+  }
+
+  // Apply email filter in memory (after email lookup)
+  const filteredLogs = userEmailFilter
+    ? (logs || []).filter((log: any) =>
+        (emailMap[log.user_id] || "").toLowerCase().includes(userEmailFilter.toLowerCase())
+      )
+    : logs || [];
+
+  // 6. Process results: attach emails and compute verdict counts
+  const processedLogs = filteredLogs.map((log: any) => {
+    const email = emailMap[log.user_id] || "unknown";
 
     // Compute verdict counts from claims array
     let true_count = 0;
@@ -118,10 +152,14 @@ export async function GET(req: Request) {
     };
   });
 
-  // 5. Return paginated results
+  // 7. Return paginated results
+  // When an email filter is active, total reflects filtered count (in-memory);
+  // otherwise use the DB-level count.
+  const total = userEmailFilter ? filteredLogs.length : (count || 0);
+
   return Response.json({
     logs: processedLogs,
-    total: count || 0,
+    total,
     page,
     pageSize,
   });

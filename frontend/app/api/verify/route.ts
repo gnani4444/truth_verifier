@@ -3,11 +3,10 @@ import { createServerClient } from "@supabase/ssr";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 
-export async function POST(req: Request) {
-  // 1. Parse body
-  const { url, use_vision = false, force_refresh = false } = await req.json();
+const INSTAGRAM_URL_RE = /^https:\/\/www\.instagram\.com\/.+/i;
 
-  // 2. Auth check
+export async function POST(req: Request) {
+  // 1. Auth check — must happen before any expensive parsing
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,6 +14,27 @@ export async function POST(req: Request) {
 
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Parse and validate body
+  let body: { url?: unknown; use_vision?: unknown; force_refresh?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { url, use_vision = false, force_refresh = false } = body;
+
+  if (typeof url !== "string") {
+    return Response.json({ error: "Missing or invalid url" }, { status: 400 });
+  }
+
+  if (!INSTAGRAM_URL_RE.test(url)) {
+    return Response.json(
+      { error: "url must be a valid Instagram URL (https://www.instagram.com/...)" },
+      { status: 400 }
+    );
   }
 
   const supabaseAdmin =

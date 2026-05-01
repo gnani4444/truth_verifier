@@ -7,8 +7,29 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Truth Verifier',
-  description: 'Fact-check Instagram posts and reels',
+  metadataBase: new URL('https://truthverifier.app'),
+  title: {
+    default: 'Truth Verifier — AI-Powered Instagram Fact Checker',
+    template: '%s | Truth Verifier',
+  },
+  description: 'Instantly fact-check Instagram posts and reels. AI extracts every factual claim and verifies it against trusted sources. Free to start.',
+  keywords: ['fact check instagram', 'instagram fact checker', 'AI fact checking', 'misinformation detector', 'claim verification', 'social media fact check', 'truth verifier'],
+  authors: [{ name: 'Truth Verifier' }],
+  openGraph: {
+    type: 'website',
+    siteName: 'Truth Verifier',
+    title: 'Truth Verifier — AI-Powered Instagram Fact Checker',
+    description: 'Instantly fact-check Instagram posts and reels. AI extracts every factual claim and verifies it against real sources.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Truth Verifier — AI-Powered Instagram Fact Checker',
+    description: 'Instantly fact-check Instagram posts and reels with AI.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

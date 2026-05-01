@@ -147,25 +147,53 @@ export default function AdminUsersTable({ users }: Props) {
 
                 {/* Actions */}
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={state.tier}
-                      disabled={state.saving}
-                      onChange={(e) =>
-                        handleTierChange(user.id, e.target.value as Tier)
-                      }
-                      className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <option value="free">free</option>
-                      <option value="pro">pro</option>
-                      <option value="admin">admin</option>
-                    </select>
-
-                    {state.saving && (
-                      <span className="text-xs text-gray-400 animate-pulse">
-                        Saving…
-                      </span>
+                  <div className="flex items-center gap-2">
+                    {state.saving ? (
+                      <span className="text-xs text-gray-400 animate-pulse">Saving…</span>
+                    ) : state.tier === 'free' ? (
+                      <button
+                        onClick={() => handleTierChange(user.id, 'pro')}
+                        disabled={state.saving}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ⬆ Upgrade to Pro
+                      </button>
+                    ) : state.tier === 'pro' ? (
+                      <>
+                        <button
+                          onClick={() => handleTierChange(user.id, 'free')}
+                          disabled={state.saving}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ⬇ Set Free
+                        </button>
+                        <button
+                          onClick={() => handleTierChange(user.id, 'admin')}
+                          disabled={state.saving}
+                          className="px-2 py-1.5 text-xs font-medium text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          → Admin
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleTierChange(user.id, 'free')}
+                          disabled={state.saving}
+                          className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          → Free
+                        </button>
+                        <button
+                          onClick={() => handleTierChange(user.id, 'pro')}
+                          disabled={state.saving}
+                          className="text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          → Pro
+                        </button>
+                      </>
                     )}
+
                     {!state.saving && state.message && (
                       <span
                         className={`text-xs font-medium ${

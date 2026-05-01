@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ProfileClient from "@/components/ProfileClient";
+
+export const metadata: Metadata = {
+  title: 'My Profile',
+  description: 'View your verification history, daily usage, and account settings on Truth Verifier.',
+  robots: { index: false, follow: false },
+};
 
 export default async function ProfilePage() {
   const supabase = await createClient();

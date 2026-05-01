@@ -46,6 +46,11 @@ export async function POST(req: Request) {
     return Response.json({ error: "Missing or invalid userId" }, { status: 400 });
   }
 
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(userId)) {
+    return Response.json({ error: "Invalid userId format" }, { status: 400 });
+  }
+
   if (!tier || typeof tier !== "string") {
     return Response.json({ error: "Missing or invalid tier" }, { status: 400 });
   }
